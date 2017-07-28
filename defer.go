@@ -5,6 +5,7 @@
 package errd
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"sync"
@@ -32,13 +33,15 @@ type DeferFunc func(s State, x interface{}) error
 // will be passed to the error handler.
 func (e *E) DeferFunc(x interface{}, f DeferFunc, h ...Handler) {
 	if f == nil {
-		panic("errd: nil DeferFunc")
+		panic(errNilFunc)
 	}
 	for i := len(h) - 1; i >= 0; i-- {
 		e.deferred = append(e.deferred, deferData{h[i], nil})
 	}
 	e.deferred = append(e.deferred, deferData{x, f})
 }
+
+var errNilFunc = errors.New("errd: nil DeferFunc")
 
 // DeferClose defers a call to x.Close.
 func (e *E) DeferClose(x io.Closer, h ...Handler) {
@@ -124,11 +127,13 @@ func (e *E) Defer(x interface{}, h ...Handler) {
 					break outer
 				}
 			}
-			panic(fmt.Errorf("errd: type %T not supported by Defer", x))
+			panic(fmt.Errorf(notSupported, x))
 		}
 		e.deferred = append(e.deferred, deferData{x, f})
 	}
 }
+
+const notSupported = "errd: type %T not supported by Defer"
 
 func (e *E) autoDefer(x interface{}, handlers []interface{}) {
 	if x != nil {
@@ -160,7 +165,7 @@ func (e *E) autoDefer(x interface{}, handlers []interface{}) {
 					break outer
 				}
 			}
-			panic(fmt.Errorf("errd: type %T not supported by Defer", x))
+			panic(fmt.Errorf(notSupported, x))
 		}
 		e.deferred = append(e.deferred, deferData{x, f})
 	}

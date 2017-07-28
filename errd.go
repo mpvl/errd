@@ -40,13 +40,15 @@ func (e *E) MustDefer(x ...interface{}) {
 			}
 		case Handler:
 			if i == 0 {
-				panic("errd: handler may not be first argument")
+				panic(errHandlerFirst)
 			}
 		default:
 			e.autoDefer(err, x[i+1:])
 		}
 	}
 }
+
+var errHandlerFirst = errors.New("errd: handler may not be first argument")
 
 // Must causes a call to Run to return on error. An error is detected if err
 // is non-nil and if it is still non-nil after passing it to error handling.

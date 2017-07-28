@@ -3,6 +3,7 @@ package errd
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -438,5 +439,88 @@ func TestRunWithContext(t *testing.T) {
 	RunWithContext(bg, func(e *E) { e.Assert(false, "context", h) })
 	if ctx != bg {
 		t.Errorf("got %v; expect defined background context", ctx)
+	}
+}
+
+func TestPanic(t *testing.T) {
+	errFoo := errors.New("foo")
+	testCases := []struct {
+		f       func(e *E)
+		p       interface{}
+		err     string
+		noPanic bool
+	}{{
+		f: func(e *E) {
+		},
+		p:       nil,
+		noPanic: true,
+	}, {
+		f: func(e *E) {
+			panic("bar")
+		},
+		p:   "bar",
+		err: "errd: paniced: bar",
+	}, {
+		f: func(e *E) {
+			panic(errFoo)
+		},
+		p:   errFoo,
+		err: "foo",
+	}, {
+		f: func(e *E) {
+			panic(2)
+		},
+		p:   2,
+		err: "errd: paniced: 2",
+	}, {
+		f: func(e *E) {
+			e.MustDefer(inc) // panic: handler on first argument
+		},
+		p:   errHandlerFirst,
+		err: errHandlerFirst.Error(),
+	}, {
+		f: func(e *E) {
+			e.DeferFunc(nil, nil) // panic: nil func
+		},
+		p:   errNilFunc,
+		err: errNilFunc.Error(),
+	}, {
+		f: func(e *E) {
+			e.Defer(1) // panic: not supported
+		},
+		err: "errd: type int not supported by Defer",
+	}, {
+		f: func(e *E) {
+			e.MustDefer(1) // panic: not supported
+		},
+		err: "errd: type int not supported by Defer",
+	}}
+	for _, tc := range testCases {
+		paniced := false
+		ec := New(DefaultFunc(func(s State, err error) error {
+			paniced = s.Panicing()
+			return err
+		}))
+		t.Run("", func(t *testing.T) {
+			defer func() {
+				r := recover()
+				if tc.p != nil && (r == nil || r != nil && r != tc.p) {
+					t.Errorf("got %v; want %v", r, tc.p)
+				}
+				if paniced != !tc.noPanic {
+					t.Errorf("got %v; want %v", paniced, !tc.noPanic)
+				}
+			}()
+			ec.Run(func(e *E) {
+				e.DeferFunc(nil, func(s State, x interface{}) error {
+					err := s.Err()
+					if err == nil && tc.err != "" || err != nil && err.Error() != tc.err {
+						t.Errorf("got %q; want %q", err, tc.err)
+					}
+					return err
+				})
+				tc.f(e)
+			})
+		})
 	}
 }
