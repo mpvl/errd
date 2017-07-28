@@ -78,7 +78,7 @@
 //     func writeToGS(ctx context.Context, bucket, dst, src string) error {
 //         return errd.Run(func(e *errd.E) {
 //             client, err := storage.NewClient(ctx)
-//             e.MustDefer(client, err, )
+//             e.MustDefer(client, err)
 //
 //             w := client.Bucket(bucket).Object(dst).NewWriter(ctx)
 //             e.Defer(w)
