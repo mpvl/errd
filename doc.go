@@ -183,7 +183,6 @@ package errd
 // - Add semantic versioning.
 //
 // Consider these API changes:
-// - Pass State as pointer instead of interface.
 //
 // - Option to chose error, where a newly encountered error may be returned
 //   instead of a previously selected one. Could be an option Replace in State.
