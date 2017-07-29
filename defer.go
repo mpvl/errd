@@ -94,19 +94,39 @@ func unlock(s State, x interface{}) error {
 	return nil
 }
 
+func voidFunc(s State, x interface{}) error {
+	x.(func())()
+	return nil
+}
+
+func voidErrorFunc(s State, x interface{}) error {
+	return x.(func() error)()
+}
+
+func errorFunc(s State, x interface{}) error {
+	x.(func(error))(s.Err())
+	return nil
+}
+
+func errorErrorFunc(s State, x interface{}) error {
+	return x.(func(error) error)(s.Err())
+}
+
 // Defer calls a defer on x based on its type. Defer panics the type of x is
 // not supported.
 //
-// Defer is configured to pick the most conservative approach to cleaning up
-// by default. It picks the following defer methods for these types:
+// Defer picks one of the following specific methods based on the type of x.
 //    - CloserWithError:      DeferCloseWithError
 //    - io.Closer:            DeferClose
 //    - sync.Locker           DeferUnlock
 //
-// TODO: support func(), func() error, func(error), and func(error) error to
-// allow closures of existing methods, with a caveat that this tends to be slow.
+// It also supports closures of the form
+// func(), func() error, func(error), and func(error) error.
 //
 // Additional types can be supported using the DeferSelector Option.
+//
+// Performance-sensitive applications should use DeferFunc or one of the
+// dedicated methods (DeferClose, DeferCloseWithError, and DeferUnlock).
 func (e *E) Defer(x interface{}, h ...Handler) {
 	if x != nil {
 		for i := len(h) - 1; i >= 0; i-- {
@@ -147,6 +167,14 @@ outer:
 		f = close
 	case sync.Locker:
 		f = unlock
+	case func():
+		f = voidFunc
+	case func() error:
+		f = voidErrorFunc
+	case func(error):
+		f = errorFunc
+	case func(error) error:
+		f = errorErrorFunc
 	default:
 		for _, h := range e.config.deferSelectors {
 			if f = h(x); f != nil {

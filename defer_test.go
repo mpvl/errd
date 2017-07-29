@@ -32,10 +32,14 @@ func (c *closerWithError) CloseWithError(err error) error {
 	return errors.New("defer error")
 }
 
-type unlocker struct{ v *string }
+type locker struct{ v *string }
 
-func (u *unlocker) Unlock() { *u.v = "Unlocked" }
-func (u *unlocker) Lock()   {}
+func (u *locker) Unlock() { *u.v = "Unlocked" }
+func (u *locker) Lock()   {}
+
+type errInOnly struct{ v *string }
+
+func (e *errInOnly) Abort(err error) { *e.v = "Abort" }
 
 func TestDefer(t *testing.T) {
 	var result string
@@ -53,80 +57,105 @@ func TestDefer(t *testing.T) {
 		return err
 	})
 
+	closer := &closer{&result}
+	closerWithError := &closerWithError{&result}
+	locker := &locker{&result}
+	errInOnly := &errInOnly{&result}
 	testCases := []struct {
 		f    func(e *E)
 		err  error // body error
 		want string
 	}{{
-		f:    func(e *E) { e.DeferClose(&closer{&result}, h1) },
+		f:    func(e *E) { e.DeferClose(closer, h1) },
 		want: "Close",
 	}, {
-		f:    func(e *E) { e.Defer(&closer{&result}, h1) },
+		f:    func(e *E) { e.Defer(closer, h1) },
 		want: "Close",
 	}, {
-		f:    func(e *E) { e.MustDefer(&closer{&result}, h1) },
+		f:    func(e *E) { e.Defer(closer.Close, h1) },
+		want: "Close",
+	}, {
+		f:    func(e *E) { e.MustDefer(closer, h1) },
 		want: "Close",
 	}, {
 		f: func(e *E) {
-			e.Defer(&closerWithError{&result}, h1)
+			e.Defer(closerWithError, h1)
 		},
 		want: "CloseNil",
 	}, {
 		f: func(e *E) {
-			e.DeferCloseWithError(&closerWithError{&result}, h1)
+			e.DeferCloseWithError(closerWithError, h1)
 		},
 		want: "CloseNil",
 	}, {
 		f: func(e *E) {
-			e.DeferCloseWithError(&closerWithError{&result})
+			e.DeferCloseWithError(closerWithError)
 		},
 		err:  errors.New("Error"),
 		want: "Close:Error",
 	}, {
 		f: func(e *E) {
-			e.DeferCloseWithError(&closerWithError{&result}, h1)
+			e.DeferCloseWithError(closerWithError, h1)
 		},
 		err:  errors.New("Error"),
 		want: "Close:Error:DefErr1",
 	}, {
 		f: func(e *E) {
-			e.DeferCloseWithError(&closerWithError{&result}, h1, h2, h3)
+			e.DeferCloseWithError(closerWithError, h1, h2, h3)
 		},
 		err:  errors.New("Error"),
 		want: "Close:Error:DefErr1:DefErr2:DefErr3",
 	}, {
 		f: func(e *E) {
-			e.Defer(&closerWithError{&result}, h1, h2, h3)
+			e.Defer(closerWithError, h1, h2, h3)
 		},
 		err:  errors.New("Error"),
 		want: "Close:Error:DefErr1:DefErr2:DefErr3",
 	}, {
 		f: func(e *E) {
-			e.MustDefer(&closerWithError{&result}, h1, h2, h3)
+			e.Defer(closerWithError.CloseWithError, h1, h2, h3)
 		},
 		err:  errors.New("Error"),
 		want: "Close:Error:DefErr1:DefErr2:DefErr3",
 	}, {
 		f: func(e *E) {
-			e.DeferUnlock(&unlocker{&result})
+			e.MustDefer(closerWithError, h1, h2, h3)
+		},
+		err:  errors.New("Error"),
+		want: "Close:Error:DefErr1:DefErr2:DefErr3",
+	}, {
+		f: func(e *E) {
+			e.DeferUnlock(locker)
 		},
 		err:  errors.New("Error"),
 		want: "Unlocked",
 	}, {
 		f: func(e *E) {
-			e.Defer(&unlocker{&result})
+			e.Defer(locker)
 		},
 		err:  errors.New("Error"),
 		want: "Unlocked",
 	}, {
 		f: func(e *E) {
-			e.MustDefer(&unlocker{&result})
+			e.Defer(locker.Unlock)
 		},
 		err:  errors.New("Error"),
 		want: "Unlocked",
 	}, {
 		f: func(e *E) {
-			e.DeferFunc(&closerWithError{&result}, closeWithError, h1)
+			e.MustDefer(locker)
+		},
+		err:  errors.New("Error"),
+		want: "Unlocked",
+	}, {
+		f: func(e *E) {
+			e.MustDefer(errInOnly.Abort)
+		},
+		err:  errors.New("Error"),
+		want: "Abort",
+	}, {
+		f: func(e *E) {
+			e.DeferFunc(closerWithError, closeWithError, h1)
 		},
 		err:  errors.New("Error"),
 		want: "Close:Error:DefErr1",
@@ -145,4 +174,43 @@ func TestDefer(t *testing.T) {
 			}
 		})
 	}
+}
+
+func BenchmarkDeferClose(b *testing.B) {
+	x := &closer{}
+	ec.Run(func(e *E) {
+		for i := 0; i < b.N; i++ {
+			e.DeferClose(x)
+			e.deferred = e.deferred[:0]
+		}
+	})
+}
+
+func BenchmarkDeferFunc(b *testing.B) {
+	x := &closer{}
+	ec.Run(func(e *E) {
+		for i := 0; i < b.N; i++ {
+			e.DeferFunc(x, close)
+			e.deferred = e.deferred[:0]
+		}
+	})
+}
+func BenchmarkDefer(b *testing.B) {
+	x := &closer{}
+	ec.Run(func(e *E) {
+		for i := 0; i < b.N; i++ {
+			e.Defer(x)
+			e.deferred = e.deferred[:0]
+		}
+	})
+}
+
+func BenchmarkDeferClosure(b *testing.B) {
+	x := &closer{}
+	ec.Run(func(e *E) {
+		for i := 0; i < b.N; i++ {
+			e.Defer(x.Close)
+			e.deferred = e.deferred[:0]
+		}
+	})
 }

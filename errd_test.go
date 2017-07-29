@@ -386,15 +386,15 @@ func runBenchCases(b *testing.B, bf []benchCase) {
 	}
 }
 
-func BenchmarkNoDefer(b *testing.B) {
+func BenchmarkRunNoDefer(b *testing.B) {
 	runBenchCases(b, testFuncsNoDefer)
 }
 
-func BenchmarkDeferClose(b *testing.B) {
+func BenchmarkRunDeferClose(b *testing.B) {
 	runBenchCases(b, testFuncsDeferClose)
 }
 
-func BenchmarkDeferCloseWithError(b *testing.B) {
+func BenchmarkRunDeferCloseWithError(b *testing.B) {
 	runBenchCases(b, testFuncsDeferCloseWithError)
 }
 
