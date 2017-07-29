@@ -287,6 +287,9 @@ Some design guidelines used in the development of this package:
 Package `errd` is about exploring better ways and semantics for handling errors
 and defers with an aim to improve Go 2.
 
+_NOTE: the rest of this section is just brainstorming and is no indication
+of where Go is heading._
+
 For example, The approach of package `errd` interacts well with generics.
 
 Consider the methods:
