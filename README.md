@@ -1,4 +1,5 @@
-# package errd
+# errd [![GoDoc](https://godoc.org/github.com/mpvl/errd?status.svg)](http://godoc.org/github.com/mpvl/errd) [![Report card](https://goreportcard.com/badge/github.com/mpvl/errd)](https://goreportcard.com/report/github.com/mpvl/errd) [![Travis-CI](https://travis-ci.org/mpvl/errd.svg)](https://travis-ci.org/mpvl/errd)
+
 
 Package `errd` simplifies error and defer handling.
 
@@ -256,8 +257,10 @@ big price to pay.
 If the original code already does a defer, the damage is limited.
 If the original code uses multiple defers, package `errd` may even be faster.
 
-Package `errd` comes with an elaborate benchmark suite so you can check it out
-for yourself.
+Passing string-type error handlers, like in the example on error handlers,
+causes an allocation.
+However, in 1.9 this special case does not incur noticeable overhead over
+passing a pre-allocated handler.
 
 
 ## Design Philosophy
