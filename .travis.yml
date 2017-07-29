@@ -1,0 +1,8 @@
+language: go
+go_import_path: github.com/mpvl/errd
+go:
+  - 1.8.x
+  - tip
+
+script:
+  - go test -v ./...
