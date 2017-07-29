@@ -4,7 +4,9 @@
 
 package errd
 
-import "os"
+import (
+	"os"
+)
 
 // An Option configures error and defer handling.
 type Option option
@@ -19,10 +21,10 @@ type Handler interface {
 var (
 	// Discard is a handler that discards the given error, causing
 	// normal control flow to resume.
-	Discard = HandlerFunc(discard)
+	Discard Handler = HandlerFunc(discard)
 
 	// Fatal is handler that causes execution to halt..
-	Fatal = HandlerFunc(fatal)
+	Fatal Handler = HandlerFunc(fatal)
 )
 
 func discard(s State, err error) error { return nil }

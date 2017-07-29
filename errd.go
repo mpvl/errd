@@ -70,8 +70,8 @@ type State interface {
 	Panicing() bool
 
 	// Err reports the first error that passed through an error handler chain.
-	// Note that this is always a different error than the one passed to an
-	// error handler.
+	// Note that this is always a different error (or nil) than the one passed
+	// to an error handler.
 	Err() error
 }
 
