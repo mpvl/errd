@@ -112,24 +112,7 @@ func (e *E) Defer(x interface{}, h ...Handler) {
 		for i := len(h) - 1; i >= 0; i-- {
 			e.deferred = append(e.deferred, deferData{h[i], nil})
 		}
-		var f DeferFunc
-	outer:
-		switch x.(type) {
-		case CloserWithError:
-			f = closeWithError
-		case io.Closer:
-			f = close
-		case sync.Locker:
-			f = unlock
-		default:
-			for _, sel := range e.config.deferSelectors {
-				if f = sel(x); f != nil {
-					break outer
-				}
-			}
-			panic(fmt.Errorf(notSupported, x))
-		}
-		e.deferred = append(e.deferred, deferData{x, f})
+		e.selectDefer(x)
 	}
 }
 
@@ -150,25 +133,29 @@ func (e *E) autoDefer(x interface{}, handlers []interface{}) {
 			j++
 			k--
 		}
-		var f DeferFunc
-	outer:
-		switch x.(type) {
-		case CloserWithError:
-			f = closeWithError
-		case io.Closer:
-			f = close
-		case sync.Locker:
-			f = unlock
-		default:
-			for _, h := range e.config.deferSelectors {
-				if f = h(x); f != nil {
-					break outer
-				}
-			}
-			panic(fmt.Errorf(notSupported, x))
-		}
-		e.deferred = append(e.deferred, deferData{x, f})
+		e.selectDefer(x)
 	}
+}
+
+func (e *E) selectDefer(x interface{}) {
+	var f DeferFunc
+outer:
+	switch x.(type) {
+	case CloserWithError:
+		f = closeWithError
+	case io.Closer:
+		f = close
+	case sync.Locker:
+		f = unlock
+	default:
+		for _, h := range e.config.deferSelectors {
+			if f = h(x); f != nil {
+				break outer
+			}
+		}
+		panic(fmt.Errorf(notSupported, x))
+	}
+	e.deferred = append(e.deferred, deferData{x, f})
 }
 
 // TODO
