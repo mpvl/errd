@@ -26,7 +26,7 @@ type Config struct {
 	// bit.
 	state E
 
-	// inPanic indicates a panic is occuring: a copy of this Config with inPanic
+	// inPanic indicates a panic is occurring: a copy of this Config with inPanic
 	// set is assigned to the state if a panic occurs. This removes this field
 	// from core.
 	inPanic bool
