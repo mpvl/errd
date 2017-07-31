@@ -84,10 +84,10 @@ func writeToGS(ctx context.Context, bucket, dst, src string) error {
     return errd.Run(func(e *errd.E) {
         client, err := storage.NewClient(ctx)
         e.Must(err)
-        e.DeferClose(client, errd.Discard)
+        e.Defer(client.Close, errd.Discard)
 
         w := client.Bucket(bucket).Object(dst).NewWriter(ctx)
-        e.DeferCloseWithError(w)
+        e.Defer(w.CloseWithError)
 
         _, err = io.Copy(w, r)
         e.Must(err)
@@ -98,13 +98,9 @@ func writeToGS(ctx context.Context, bucket, dst, src string) error {
 `Run` starts a scope in which errors and defers are managed.
 The `Must` forces the closure called by Run to return immediately if the passed
 error is not nil.
-The `DeferClose`, `DeferClose`, and `DeferCloseWithError` methods implement
-a conservative handling of errors around the common namesake methods used with
-defer.
-Package `errd` also defines a `Defer` method that automatically selects the
-right method to use for `Defer`.
-This method makes it harder to forget to use `CloseWithError` when appropriate.
-Users can also define their own defer functions, if necessary.
+The `Defer` methods implement a conservative handling of errors, passing
+along any caught error when possible.
+
 
 ## Error Handlers
 
@@ -130,9 +126,11 @@ func writeToGS(ctx context.Context, bucket, dst, src string) error {
     return errd.Run(func(e *errd.E) {
         client, err := storage.NewClient(ctx)
         e.Must(err, msg("error opening client"))
-        e.Defer(client)
+        e.Defer(client.Close)
+
         w := client.Bucket(bucket).Object(dst).NewWriter(ctx)
-        e.Defer(w)
+        e.Defer(w.CloseWithError)
+
         _, err = io.Copy(w, r)
         e.Must(err, msg("error copying contents"))
     })
@@ -162,7 +160,7 @@ handled.
 
 ## Deferring
 
-Package `errd` includes predefined defer handlers for unlocking `sync.Lockers`
+Package `errd` includes predefined defer methods for unlocking `sync.Lockers`
 and closing `io.Closers` and Closers that include a `CloseWithError` method.
 Users can define their own by passing a `DeferFunc` to the `DeferFunc` method.
 

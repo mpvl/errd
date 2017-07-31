@@ -41,16 +41,7 @@
 // CloseWithError, whenever any anomaly is encountered. This includes a
 // panic that could occur in the reader.
 //
-// This code shows that error handling can be subtle and not the mindless
-// check-decorate-return pattern it often seems to be. Does a Closer also
-// support CloseWithError? Which panics need to be handled? Also note the
-// subtle use of the return variable to convey an error in Copy to the last
-// defer function.
-// In practice, it is not unlikely that one would forget to handle the reader
-// panicing, or even returning the error from Close,
-// until this is discovered as a bug.
-//
-// Package errd aims to greatly reduce bugs resulting from such subtleties by
+// Package errd aims to reduce bugs resulting from such subtleties by
 // making the default of having very strict error checking easy.
 // The following code achieves the same as the above:
 //
@@ -58,27 +49,31 @@
 //         return errd.Run(func(e *errd.E) {
 //             client, err := storage.NewClient(ctx)
 //             e.Must(err)
-//             e.DeferClose(client, errd.Discard)
+//             e.Defer(client.Close, errd.Discard)
 //
 //             w := client.Bucket(bucket).Object(dst).NewWriter(ctx)
-//             e.DeferCloseWithError(w)
+//             e.Defer(w.CloseWithError)
 //
 //             _, err = io.Copy(w, r)
 //             e.Must(err)
 //         })
 //     }
 //
-// The `Discard` handler is passed to mimic the behavior of the original code
-// to ignore any error resulting from closing the client.
+// Discard is an example of an error handler. Here it signals that we want
+// to ignore the error of the first Close.
+// More on error handlers later.
+// The first Must and Defer could also have been written as
+// e.MustDefer(err, client.Close, errd.Discard)
 //
-// Package `errd` also allows automatic selection of the defer method using the
-// `Defer` and `MustDefer` method, where the later is a shorthand of calling
-// `Must` and `Defer` in sequence.
+//
+// Deferring
+//
+// Package errd also allows automatic selection of the defer method:
 //
 //     func writeToGS(ctx context.Context, bucket, dst, src string) error {
 //         return errd.Run(func(e *errd.E) {
 //             client, err := storage.NewClient(ctx)
-//             e.MustDefer(client, err)
+//             e.MustDefer(err, client, errd.Discard)
 //
 //             w := client.Bucket(bucket).Object(dst).NewWriter(ctx)
 //             e.Defer(w)
@@ -88,9 +83,14 @@
 //         })
 //     }
 //
-// Using these implicit defers will ensure the most conservative defer method
-// is picked by default, simplifying understanding the code without consulting
-// the docs.
+// Defer picks CloseWithError over Close when possible, in line with defaulting
+// to the most conservative strategy.
+// Users may provide support for additional types with the DeferSelector Option.
+//
+// Performance-sensitive applications should consider the use of
+// the DeferFunc method.
+// Package errd includes predefined defer methods for unlocking sync.Lockers
+// and closing io.Closers and Closers that include a CloseWithError method.
 //
 //
 // Error Handlers
@@ -143,19 +143,6 @@
 // Setting up a global config with a default handler and using that everywhere
 // makes it easy to enforce decorating errors. Error handlers can also be used
 // to pass up HTTP error codes, log errors, attach metrics, etc.
-//
-//
-// Deferring
-//
-// Package errd includes predefined defer handlers for unlocking sync.Lockers
-// and closing io.Closers and Closers that include a CloseWithError method.
-// Users can define their own by passing a DeferFunc to the DeferFunc method.
-//
-// With AutoDefer or Auto, errd will automatically select the defer handler
-// based on the type of the value. In case of Closing, this has the advantage
-// that one will not mistakenly forget to use CloseWithError when appropriate.
-// By default errd will select the most conservative error passing strategy.
-// Users may provide support for additional types with the DeferHandler Option.
 //
 //
 // Returning Values

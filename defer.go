@@ -112,18 +112,20 @@ func errorErrorFunc(s State, x interface{}) error {
 	return x.(func(error) error)(s.Err())
 }
 
-// Defer calls a defer on x based on its type. Defer panics the type of x is
-// not supported.
+// Defer calls defers a call based on the type of x.
+// It supports functions of the form:
+//    - func()
+//    - func() error
+//    - func(error)
+//    - func(error) error
+// An error returned by any of these functions is passed to the error handlers.
 //
-// Defer picks one of the following specific methods based on the type of x.
+// For other types of x it picks on of the following methods:
 //    - CloserWithError:      DeferCloseWithError
 //    - io.Closer:            DeferClose
 //    - sync.Locker           DeferUnlock
-//
-// It also supports closures of the form
-// func(), func() error, func(error), and func(error) error.
-//
 // Additional types can be supported using the DeferSelector Option.
+// Defer panics the type of x is not supported.
 //
 // Performance-sensitive applications should use DeferFunc or one of the
 // dedicated methods (DeferClose, DeferCloseWithError, and DeferUnlock).
