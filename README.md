@@ -76,9 +76,6 @@ check-decorate-return pattern it often seems to be.
 Does a Closer also support CloseWithError? Which panics need to be handled?
 Also note the subtle use of the return variable to convey an error in Copy to
 the last defer function.
-In practice, it is not unlikely that one would forget to handle the reader
-panicing, or even returning the error from Close,
-until this is discovered as a bug.
 
 In package `errd` the same code is written as:
 
@@ -142,11 +139,9 @@ func writeToGS(ctx context.Context, bucket, dst, src string) error {
 }
 ```
 
-The storage package used in this example defines the errors that are
-typically a result of user error.
-It would be possible to write a more generic storage writer that will add
-additional clarification when possible.
-Using such a handler as a default handler would look like:
+Instead of handling individual cases, we can also define a more generic storage
+error handle to add information based on the returned error.
+This code uses such a default handler:
 
 ```go
 var ecGS = errd.New(DefaultHandler(convertGSError))
@@ -161,9 +156,8 @@ func writeToGS(ctx context.Context, bucket, dst, src string) error {
 }
 ```
 
-Setting up a global config with a default handler and using that everywhere
-makes it easy to enforce decorating errors. Error handlers can also be used
-to pass up HTTP error codes, log errors, attach metrics, etc.
+The use of default handlers makes it easier to ensure an error is always
+handled.
 
 
 ## Deferring
@@ -205,13 +199,8 @@ code that at least one of the returned values will always be the zero value.
 
 Package `errd` uses Go's `panic` and `recover` mechanism to force the exit from
 `Run` if an error is encountered.
-On top of that, package `errd` manages its own defer state.
-The latter is necessary to properly interweave error and defer handling.
-Other than that it builds upon the customs and conventions that have been
-settled on in the Go community to cover many use cases with a relatively
-small API surface.
-For example, in most cases `defer` is either used for
-`Close`-ing or `Unlock`-ing.
+On top of that, package `errd` manages its own defer state, which is
+necessary to properly interweave error and defer handling.
 
 
 ## Naming
@@ -324,7 +313,6 @@ func writeToGS(ctx context.Context, bkt, dst, src string) error {
 where `must` checks the error and bails if non-nil, `close` calls a defer func
 that picks `Close` and `CloseWithError`.
 Both `must` and `close` could be user-defined wrapper functions.
-
 
 A big advantage of making this a language feature is that it would be easier
 to enforce that this feature is not used across function, or even worse,
