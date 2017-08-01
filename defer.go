@@ -11,8 +11,8 @@ import (
 	"sync"
 )
 
-// A CloserWithError is an io.Closer that also implements CloseWithError.
-type CloserWithError interface {
+// A closerWithError is an io.Closer that also implements CloseWithError.
+type closerWithError interface {
 	io.Closer
 	CloseWithError(error) error
 }
@@ -47,7 +47,7 @@ var (
 	// Close calls x.Close().
 	Close DeferFunc = close
 
-	// CloseWithError
+	// CloseWithError calls x.CloseWithError().
 	CloseWithError DeferFunc = closeWithError
 
 	// Unlock calls x.Unlock().
@@ -59,7 +59,7 @@ func close(s State, x interface{}) error {
 }
 
 func closeWithError(s State, x interface{}) error {
-	c := x.(CloserWithError)
+	c := x.(closerWithError)
 	if err := s.Err(); err != nil {
 		return c.CloseWithError(err)
 	}
@@ -89,81 +89,37 @@ func errorErrorFunc(s State, x interface{}) error {
 	return x.(func(error) error)(s.Err())
 }
 
-// Defer calls defers a call based on the type of x.
-// It supports functions of the form:
+// Defer defers a call to x, which may be a function of the form:
 //    - func()
 //    - func() error
 //    - func(error)
 //    - func(error) error
 // An error returned by any of these functions is passed to the error handlers.
 //
-// For other types of x it picks on of the following methods:
-//    - CloserWithError:      DeferCloseWithError
-//    - io.Closer:            DeferClose
-//    - sync.Locker           DeferUnlock
-// Additional types can be supported using the DeferSelector Option.
-// Defer panics the type of x is not supported.
-//
-// Performance-sensitive applications should use DeferFunc or one of the
-// dedicated methods (DeferClose, DeferCloseWithError, and DeferUnlock).
+// Performance-sensitive applications should use DeferFunc.
 func (e *E) Defer(x interface{}, h ...Handler) {
 	if x != nil {
 		for i := len(h) - 1; i >= 0; i-- {
 			e.deferred = append(e.deferred, deferData{h[i], nil})
 		}
-		e.selectDefer(x)
+		var f DeferFunc
+		switch x.(type) {
+		case func():
+			f = voidFunc
+		case func() error:
+			f = voidErrorFunc
+		case func(error):
+			f = errorFunc
+		case func(error) error:
+			f = errorErrorFunc
+		default:
+			panic(fmt.Errorf(notSupported, x))
+		}
+		e.deferred = append(e.deferred, deferData{x, f})
 	}
 }
 
 const notSupported = "errd: type %T not supported by Defer"
-
-func (e *E) autoDefer(x interface{}, handlers []interface{}) {
-	if x != nil {
-		first := len(e.deferred)
-		for _, x := range handlers {
-			h, ok := x.(Handler)
-			if !ok {
-				break
-			}
-			e.deferred = append(e.deferred, deferData{h, nil})
-		}
-		for j, k := first, len(e.deferred)-1; j < k; {
-			e.deferred[j], e.deferred[k] = e.deferred[k], e.deferred[j]
-			j++
-			k--
-		}
-		e.selectDefer(x)
-	}
-}
-
-func (e *E) selectDefer(x interface{}) {
-	var f DeferFunc
-outer:
-	switch x.(type) {
-	case CloserWithError:
-		f = closeWithError
-	case io.Closer:
-		f = close
-	case sync.Locker:
-		f = unlock
-	case func():
-		f = voidFunc
-	case func() error:
-		f = voidErrorFunc
-	case func(error):
-		f = errorFunc
-	case func(error) error:
-		f = errorErrorFunc
-	default:
-		for _, h := range e.config.deferSelectors {
-			if f = h(x); f != nil {
-				break outer
-			}
-		}
-		panic(fmt.Errorf(notSupported, x))
-	}
-	e.deferred = append(e.deferred, deferData{x, f})
-}
 
 // TODO
 //

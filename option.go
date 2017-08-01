@@ -44,17 +44,6 @@ func (f HandlerFunc) Handle(s State, err error) error {
 	return f(s, err)
 }
 
-type deferHandler func(interface{}) DeferFunc
-
-// DeferSelector registers a handler is used by Auto and AutoDefer to select a
-// DeferFunc for a given value. A handler may return nil, in which case the
-// next handler or the default types will be attempted.
-func DeferSelector(h func(x interface{}) DeferFunc) Option {
-	return func(c *Config) {
-		c.deferSelectors = append(c.deferSelectors, h)
-	}
-}
-
 // DefaultHandler adds a hander that is run when an error is detected by an
 // error checking call and if this call itself did not specify any handlers.
 //

@@ -307,7 +307,7 @@ func retDefer(w io.Writer, closers []idCloser, id, action int) (io.Closer, error
 	panic("errd: unreachable")
 }
 
-func retDeferWithErr(w io.Writer, closers []idCloser, id, action int) (CloserWithError, error) {
+func retDeferWithErr(w io.Writer, closers []idCloser, id, action int) (closerWithError, error) {
 	// pre-allocate io.Closers. This is not realistice, but eliminates this
 	// allocation from the measurements.
 	closers[id] = idCloser{id, action, w}
@@ -386,15 +386,15 @@ func runBenchCases(b *testing.B, bf []benchCase) {
 	}
 }
 
-func BenchmarkRunNoDefer(b *testing.B) {
+func BenchmarkNoDefer(b *testing.B) {
 	runBenchCases(b, testFuncsNoDefer)
 }
 
-func BenchmarkRunDeferClose(b *testing.B) {
+func BenchmarkDeferClose(b *testing.B) {
 	runBenchCases(b, testFuncsDeferClose)
 }
 
-func BenchmarkRunDeferCloseWithError(b *testing.B) {
+func BenchmarkDeferCloseWithError(b *testing.B) {
 	runBenchCases(b, testFuncsDeferCloseWithError)
 }
 

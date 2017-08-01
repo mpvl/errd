@@ -72,10 +72,10 @@
 //         return errd.Run(func(e *errd.E) {
 //             client, err := storage.NewClient(ctx)
 //             e.Must(err)
-//             e.Defer(client, errd.Discard)
+//             e.Defer(client.Close, errd.Discard)
 //
 //             w := client.Bucket(bucket).Object(dst).NewWriter(ctx)
-//             e.Defer(w)
+//             e.Defer(w.CloseWithError)
 //
 //             _, err = io.Copy(w, r)
 //             e.Must(err)
@@ -113,10 +113,10 @@
 //         return errd.Catch(func(e *errd.E) {
 //             client, err := storage.NewClient(ctx)
 //             e.Must(err, msg("error opening client"))
-//             e.Defer(client)
+//             e.Defer(client.Close)
 //
 //             w := client.Bucket(bucket).Object(dst).NewWriter(ctx)
-//             e.Defer(w)
+//             e.Defer(w.CloseWithError)
 //
 //             _, err = io.Copy(w, r)
 //             e.Must(err, msg("error copying contents"))
@@ -134,7 +134,7 @@
 //         return ecGS.Run(func(e *errd.E) {
 //             client, err := storage.NewClient(ctx)
 //             e.Must(err)
-//             e.Defer(client)
+//             e.Defer(client.Close)
 //             ...
 //         })
 //     }

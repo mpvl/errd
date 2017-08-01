@@ -18,8 +18,6 @@ func New(options ...Option) *Config {
 
 // A Config defines a default way to handle errors and options.
 type Config struct {
-	deferSelectors  []deferHandler
-	handlers        []Handler
 	defaultHandlers []Handler
 
 	// Putting a pre-initialized state in a Config improves performance a tad

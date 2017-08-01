@@ -54,7 +54,7 @@ func ExampleRun() {
 func ExampleRun_pipe() {
 	r, w := io.Pipe()
 	go errd.Run(func(e *errd.E) {
-		e.Defer(w)
+		e.Defer(w.CloseWithError)
 
 		r, err := newReader() // contents: Hello World!
 		e.Must(err)

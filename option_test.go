@@ -127,51 +127,6 @@ func TestOptions(t *testing.T) {
 		err1:      err1,
 		err2:      err2,
 		want:      err1,
-	}, {
-		desc:    "defer selector",
-		options: []Option{DeferSelector(defErr)},
-		def1:    3, // returns err3
-		want:    err3,
-	}, {
-		desc:    "defer fallback",
-		options: []Option{DeferSelector(defStrInt), DeferSelector(defErr)},
-		def1:    2,
-		want:    err3,
-	}, {
-		desc:    "defer fallback",
-		options: []Option{DeferSelector(defErr), DeferSelector(defStrInt)},
-		def1:    3,
-		want:    err3,
-	}, {
-		desc:       "defer error handler",
-		options:    []Option{DeferSelector(defErr)},
-		handlersD1: []Handler{Discard},
-		def1:       3, // returns err3
-		want:       nil,
-	}, {
-		desc:    "defer erase error in default",
-		options: []Option{DeferSelector(defErr), DefaultHandler(Discard)},
-		def1:    3, // returns err3
-		want:    nil,
-	}, {
-		desc:       "defer error handler not used when error",
-		options:    []Option{DeferSelector(defErr)},
-		handlersD1: []Handler{inc},
-		def1:       3, // returns err3
-		err1:       err1,
-		want:       err1,
-	}, {
-		desc:    "normal error takes precedence over defer error",
-		options: []Option{DeferSelector(defErr)},
-		err2:    err2,
-		def1:    3, // returns err3
-		want:    err2,
-	}, {
-		desc:    "defer cannot clear error",
-		options: []Option{DeferSelector(defErr)},
-		err2:    err2,
-		def1:    0, // returns nil
-		want:    err2,
 	}}
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
