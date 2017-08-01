@@ -142,13 +142,13 @@ error handle to add information based on the returned error.
 This code uses such a default handler:
 
 ```go
-var ecGS = errd.New(DefaultHandler(convertGSError))
+var ecGS = errd.New(convertGSError)
 
 func writeToGS(ctx context.Context, bucket, dst, src string) error {
     return ecGS.Run(func(e *errd.E) {
         client, err := storage.NewClient(ctx)
         e.Must(err)
-        e.Defer(client)
+        e.Defer(client.Close)
         ...
     })
 }
@@ -157,41 +157,6 @@ func writeToGS(ctx context.Context, bucket, dst, src string) error {
 The use of default handlers makes it easier to ensure an error is always
 handled.
 
-
-## Deferring
-
-Package `errd` includes predefined defer methods for unlocking `sync.Lockers`
-and closing `io.Closers` and Closers that include a `CloseWithError` method.
-Users can define their own by passing a `DeferFunc` to the `DeferFunc` method.
-
-With `Defer`, `errd` will automatically select the defer handler
-based on the type of the value. In case of Closing, this has the advantage
-that one will not mistakenly forget to use CloseWithError when appropriate.
-By default `errd` will select the most conservative error passing strategy.
-Users may provide support for additional types with the `DeferSelector` Option.
-
-## Returning Values
-
-A function that is passed to Run doesn't have any return values, not even an
-error.
-Users can set return values in the outer scope, for example by using named
-return variables.
-
-```go
-func foo() (name string, err error) {
-    return name, errd.Run(func(e *errd.E) {
-        // Some fun code here.
-        // Set name at the end.
-        name = "bar"
-    })
-}
-```
-
-Note that although the order of evaluation of the arguments to return is not
-defined, it will work in either case.
-
-Using this convention has the additional benefit that it is easy to spot in
-code that at least one of the returned values will always be the zero value.
 
 ## How it works
 

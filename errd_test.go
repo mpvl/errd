@@ -486,7 +486,7 @@ func TestPanic(t *testing.T) {
 	}}
 	for _, tc := range testCases {
 		paniced := false
-		ec := New(DefaultFunc(func(s State, err error) error {
+		ec := New(HandlerFunc(func(s State, err error) error {
 			paniced = s.Panicing()
 			return err
 		}))

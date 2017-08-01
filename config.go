@@ -6,13 +6,12 @@ package errd
 
 import "context"
 
-// New returns a new Config with the given options.
-func New(options ...Option) *Config {
-	c := &Config{}
-	c.state.config = c
-	for _, o := range options {
-		o(c)
+// New returns a new Config for the given default handlers.
+func New(defaultHandlers ...Handler) *Config {
+	c := &Config{
+		defaultHandlers: defaultHandlers,
 	}
+	c.state.config = c
 	return c
 }
 
