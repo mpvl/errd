@@ -166,7 +166,7 @@ func errdClosureDefer(w io.Writer, actions []int) errFunc {
 			for i, a := range actions {
 				c, err := retDefer(w, closers, i, a)
 				e.Must(err)
-				e.DeferClose(c)
+				e.DeferFunc(c, Close)
 			}
 		})
 		return err
@@ -243,7 +243,7 @@ func errdClosureDeferWithError(w io.Writer, actions []int) errFunc {
 			for i, a := range actions {
 				c, err := retDeferWithErr(w, closers, i, a)
 				e.Must(err, identity)
-				e.DeferCloseWithError(c)
+				e.DeferFunc(c, CloseWithError)
 			}
 		})
 	}
@@ -430,13 +430,13 @@ func TestRunWithContext(t *testing.T) {
 		return nil
 	})
 
-	Run(func(e *E) { e.Assert(false, "no context", h) })
+	Run(func(e *E) { e.Must(errors.New("no context"), h) })
 	if ctx == nil {
 		t.Error("got a nil context, expected TODO")
 	}
 
 	bg := context.Background()
-	RunWithContext(bg, func(e *E) { e.Assert(false, "context", h) })
+	RunWithContext(bg, func(e *E) { e.Must(errors.New("context"), h) })
 	if ctx != bg {
 		t.Errorf("got %v; expect defined background context", ctx)
 	}
@@ -474,12 +474,6 @@ func TestPanic(t *testing.T) {
 		err: "errd: paniced: 2",
 	}, {
 		f: func(e *E) {
-			e.MustDefer(inc) // panic: handler on first argument
-		},
-		p:   errHandlerFirst,
-		err: errHandlerFirst.Error(),
-	}, {
-		f: func(e *E) {
 			e.DeferFunc(nil, nil) // panic: nil func
 		},
 		p:   errNilFunc,
@@ -487,11 +481,6 @@ func TestPanic(t *testing.T) {
 	}, {
 		f: func(e *E) {
 			e.Defer(1) // panic: not supported
-		},
-		err: "errd: type int not supported by Defer",
-	}, {
-		f: func(e *E) {
-			e.MustDefer(1) // panic: not supported
 		},
 		err: "errd: type int not supported by Defer",
 	}}

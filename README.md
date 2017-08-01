@@ -164,7 +164,7 @@ Package `errd` includes predefined defer methods for unlocking `sync.Lockers`
 and closing `io.Closers` and Closers that include a `CloseWithError` method.
 Users can define their own by passing a `DeferFunc` to the `DeferFunc` method.
 
-With `Defer` or `MustDefer`, `errd` will automatically select the defer handler
+With `Defer`, `errd` will automatically select the defer handler
 based on the type of the value. In case of Closing, this has the advantage
 that one will not mistakenly forget to use CloseWithError when appropriate.
 By default `errd` will select the most conservative error passing strategy.
@@ -224,17 +224,6 @@ A similar effect can be achieved for a `Must` of any other package by catching
 the panic with a `defer` an `recover`.
 As such package `errd` merely expands this convention.
 
-The `MustDefer` needs some clarification.
-In Go, a `MustFoo` method or function idiomatically indicates that `Foo` will
-be performed but that any error encountered will interupt the normal flow of
-execution.
-In the case of `MustDefer` the flow of execution may be interupted not as a
-result of calling the defer, but because of an error resulting from an earlier
-execution.
-This is therefore strictly not a correct use of the idiom.
-However, this method is useful to gain insight on how error handling may be
-improved and made most convenient and as such fits with the overall goal/
-ulterior motive of this package.
 
 ## Performance
 
@@ -327,9 +316,6 @@ ignored variables.
 Package `errd`  approach tackles a similar sentiment by making it more likely
 an error is handled by default and requiring more intervention to ignore
 an error.
-Using a method like `MustDefer`, where all return arguments are repeated in
-order on the next line, makes it easier to visually scan whether return values
-are handled in code.
 
 Issue https://github.com/golang/go/issues/18721 aims to be terser by introducing
 syntactic sugar for error handling. Error handling as done by package `errd`,

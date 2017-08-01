@@ -176,22 +176,6 @@ func TestOptions(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			got := New(tc.options...).Run(func(e *E) {
-				args := []interface{}{tc.def1}
-				for _, h := range tc.handlersD1 {
-					args = append(args, h)
-				}
-				args = append(args, tc.err1)
-				for _, h := range tc.handlers1 {
-					args = append(args, h)
-				}
-				e.MustDefer(args...)
-				e.Must(tc.err2, tc.handlers2...)
-			})
-			if got != tc.want {
-				t.Errorf("MustDefer: got %v; want %v", got, tc.want)
-			}
-			// Check and AutoDefer
-			got = New(tc.options...).Run(func(e *E) {
 				args := []interface{}{tc.def1, tc.err1}
 				for _, h := range tc.handlers1 {
 					args = append(args, h)
@@ -201,7 +185,7 @@ func TestOptions(t *testing.T) {
 				e.Must(tc.err2, tc.handlers2...)
 			})
 			if got != tc.want {
-				t.Errorf("Must+Defer: got %v; want %v", got, tc.want)
+				t.Errorf("got %v; want %v", got, tc.want)
 			}
 		})
 	}

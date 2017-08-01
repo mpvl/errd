@@ -43,39 +43,16 @@ func (e *E) DeferFunc(x interface{}, f DeferFunc, h ...Handler) {
 
 var errNilFunc = errors.New("errd: nil DeferFunc")
 
-// DeferClose defers a call to x.Close.
-func (e *E) DeferClose(x io.Closer, h ...Handler) {
-	for i := len(h) - 1; i >= 0; i-- {
-		e.deferred = append(e.deferred, deferData{h[i], nil})
-	}
-	e.deferred = append(e.deferred, deferData{x, close})
-}
+var (
+	// Close calls x.Close().
+	Close DeferFunc = close
 
-// DeferCloseWithError defers a call to x.CloseWithError if an error was
-// encountered or x.Close otherwise.
-func (e *E) DeferCloseWithError(x CloserWithError, h ...Handler) {
-	for i := len(h) - 1; i >= 0; i-- {
-		e.deferred = append(e.deferred, deferData{h[i], nil})
-	}
-	e.deferred = append(e.deferred, deferData{x, closeWithError})
-}
+	// CloseWithError
+	CloseWithError DeferFunc = closeWithError
 
-// DeferUnlock defers a call to x.Unlock.
-func (e *E) DeferUnlock(x sync.Locker) {
-	e.deferred = append(e.deferred, deferData{x, unlock})
-}
-
-// TODO: expose this?
-// var (
-// 	// Close calls x.Close().
-// 	Close DeferFunc = close
-//
-// 	// CloseWithError
-// 	CloseWithError DeferFunc = closeWithError
-//
-// 	// Unlock calls x.Unlock().
-// 	Unlock DeferFunc = unlock
-// )
+	// Unlock calls x.Unlock().
+	Unlock DeferFunc = unlock
+)
 
 func close(s State, x interface{}) error {
 	return x.(io.Closer).Close()

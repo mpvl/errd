@@ -66,45 +66,16 @@ func TestDefer(t *testing.T) {
 		err  error // body error
 		want string
 	}{{
-		f:    func(e *E) { e.DeferClose(closer, h1) },
-		want: "Close",
-	}, {
 		f:    func(e *E) { e.Defer(closer, h1) },
 		want: "Close",
 	}, {
 		f:    func(e *E) { e.Defer(closer.Close, h1) },
 		want: "Close",
 	}, {
-		f:    func(e *E) { e.MustDefer(closer, h1) },
-		want: "Close",
-	}, {
 		f: func(e *E) {
 			e.Defer(closerWithError, h1)
 		},
 		want: "CloseNil",
-	}, {
-		f: func(e *E) {
-			e.DeferCloseWithError(closerWithError, h1)
-		},
-		want: "CloseNil",
-	}, {
-		f: func(e *E) {
-			e.DeferCloseWithError(closerWithError)
-		},
-		err:  errors.New("Error"),
-		want: "Close:Error",
-	}, {
-		f: func(e *E) {
-			e.DeferCloseWithError(closerWithError, h1)
-		},
-		err:  errors.New("Error"),
-		want: "Close:Error:DefErr1",
-	}, {
-		f: func(e *E) {
-			e.DeferCloseWithError(closerWithError, h1, h2, h3)
-		},
-		err:  errors.New("Error"),
-		want: "Close:Error:DefErr1:DefErr2:DefErr3",
 	}, {
 		f: func(e *E) {
 			e.Defer(closerWithError, h1, h2, h3)
@@ -119,18 +90,6 @@ func TestDefer(t *testing.T) {
 		want: "Close:Error:DefErr1:DefErr2:DefErr3",
 	}, {
 		f: func(e *E) {
-			e.MustDefer(closerWithError, h1, h2, h3)
-		},
-		err:  errors.New("Error"),
-		want: "Close:Error:DefErr1:DefErr2:DefErr3",
-	}, {
-		f: func(e *E) {
-			e.DeferUnlock(locker)
-		},
-		err:  errors.New("Error"),
-		want: "Unlocked",
-	}, {
-		f: func(e *E) {
 			e.Defer(locker)
 		},
 		err:  errors.New("Error"),
@@ -143,13 +102,7 @@ func TestDefer(t *testing.T) {
 		want: "Unlocked",
 	}, {
 		f: func(e *E) {
-			e.MustDefer(locker)
-		},
-		err:  errors.New("Error"),
-		want: "Unlocked",
-	}, {
-		f: func(e *E) {
-			e.MustDefer(errInOnly.Abort)
+			e.Defer(errInOnly.Abort)
 		},
 		err:  errors.New("Error"),
 		want: "Abort",
@@ -174,16 +127,6 @@ func TestDefer(t *testing.T) {
 			}
 		})
 	}
-}
-
-func BenchmarkDeferClose(b *testing.B) {
-	x := &closer{}
-	ec.Run(func(e *E) {
-		for i := 0; i < b.N; i++ {
-			e.DeferClose(x)
-			e.deferred = e.deferred[:0]
-		}
-	})
 }
 
 func BenchmarkDeferFunc(b *testing.B) {

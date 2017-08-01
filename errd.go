@@ -24,30 +24,6 @@ type core struct {
 // An E coordinates the error and defer handling.
 type E struct{ core }
 
-// MustDefer dispatches any values accepted by Must and Defer to the respective
-// methods. Handlers may be passed as well and will be applied in case of an
-// error only on the value immediately preceding it.
-//
-// Aside from being compact, MustDefer makes it visually clear which return
-// arguments of a statement on the previous line are handled.
-func (e *E) MustDefer(x ...interface{}) {
-	for i, v := range x {
-		switch err := v.(type) {
-		case error:
-			if err != nil {
-				// TODO: consider verifying that all other arguments are valid.
-				processErrorArgs(e, err, x[i+1:])
-			}
-		case Handler:
-			if i == 0 {
-				panic(errHandlerFirst)
-			}
-		default:
-			e.autoDefer(err, x[i+1:])
-		}
-	}
-}
-
 var errHandlerFirst = errors.New("errd: handler may not be first argument")
 
 // Must causes a call to Run to return on error. An error is detected if err
@@ -217,30 +193,6 @@ func processError(e *E, err error, handlers []Handler) {
 		}
 	}
 	if len(handlers) == 0 {
-		for _, h := range e.config.defaultHandlers {
-			if eh.handle(h) {
-				return
-			}
-		}
-	}
-	if e.err == nil {
-		e.err = &err
-	}
-	bail(e)
-}
-
-func processErrorArgs(e *E, err error, args []interface{}) {
-	eh := errorHandler{e: e, err: &err}
-	hadHandler := false
-	for _, x := range args {
-		if h, ok := x.(Handler); ok {
-			hadHandler = true
-			if eh.handle(h) {
-				return
-			}
-		}
-	}
-	if !hadHandler {
 		for _, h := range e.config.defaultHandlers {
 			if eh.handle(h) {
 				return

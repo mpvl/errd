@@ -21,10 +21,12 @@ func ExampleHandler_fatal() {
 	exitOnError := errd.New(errd.DefaultHandler(errd.Fatal))
 	exitOnError.Run(func(e *errd.E) {
 		r, err := newReader()
-		e.MustDefer(r, err)
+		e.Must(err)
+		e.Defer(r.Close)
 
 		r, err = newFaultyReader()
-		e.MustDefer(r, err)
+		e.Must(err)
+		e.Defer(r.Close)
 	})
 }
 
@@ -39,7 +41,8 @@ func newFaultyReader() (io.ReadCloser, error) {
 func ExampleRun() {
 	errd.Run(func(e *errd.E) {
 		r, err := newReader() // contents: Hello World!
-		e.MustDefer(r.Close, err)
+		e.Must(err)
+		e.Defer(r.Close)
 
 		_, err = io.Copy(os.Stdout, r)
 		e.Must(err)
@@ -54,7 +57,8 @@ func ExampleRun_pipe() {
 		e.Defer(w)
 
 		r, err := newReader() // contents: Hello World!
-		e.MustDefer(r, err)
+		e.Must(err)
+		e.Defer(r.Close)
 
 		_, err = io.Copy(w, r)
 		e.Must(err)
