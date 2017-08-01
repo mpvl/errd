@@ -61,35 +61,6 @@
 //
 // Discard is an example of an error handler. Here it signals that we want
 // to ignore the error of the first Close.
-// More on error handlers later.
-//
-//
-// Deferring
-//
-// Package errd also allows automatic selection of the defer method:
-//
-//     func writeToGS(ctx context.Context, bucket, dst, src string) error {
-//         return errd.Run(func(e *errd.E) {
-//             client, err := storage.NewClient(ctx)
-//             e.Must(err)
-//             e.Defer(client.Close, errd.Discard)
-//
-//             w := client.Bucket(bucket).Object(dst).NewWriter(ctx)
-//             e.Defer(w.CloseWithError)
-//
-//             _, err = io.Copy(w, r)
-//             e.Must(err)
-//         })
-//     }
-//
-// Defer picks CloseWithError over Close when possible, in line with defaulting
-// to the most conservative strategy.
-// Users may provide support for additional types with the DeferSelector Option.
-//
-// Performance-sensitive applications should consider the use of
-// the DeferFunc method.
-// Package errd includes predefined defer functions for unlocking sync.Lockers
-// and closing io.Closers and Closers that include a CloseWithError method.
 //
 //
 // Error Handlers

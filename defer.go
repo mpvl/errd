@@ -25,12 +25,9 @@ type deferData struct {
 // A DeferFunc is used to call cleanup code for x at defer time.
 type DeferFunc func(s State, x interface{}) error
 
-// DeferFunc calls f(x, err) at the end of a Run, where err is the current
-// error.
+// DeferFunc calls f at the end of a Run with x as its argument.
 //
-// If f returns an error even if an error already existed, the previously
-// existing error is retained to be returned by Run. In either case, the error
-// will be passed to the error handler.
+// If f returns an error it will be passed to the error handlers.
 func (e *E) DeferFunc(x interface{}, f DeferFunc, h ...Handler) {
 	if f == nil {
 		panic(errNilFunc)
