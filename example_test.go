@@ -76,7 +76,9 @@ func ExampleRun_pipe() {
 	// 		return
 	// 	}
 	// 	defer func() {
-	// 		err = r.Close()
+	// 		if errC := r.Close(); errC != nil && err == nil {
+	//			err = errC
+	//		}
 	// 	}
 	//
 	// 	_, err = io.Copy(w, r)
