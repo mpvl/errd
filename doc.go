@@ -81,7 +81,7 @@
 // This handler can then be used as follows:
 //
 //     func writeToGS(ctx context.Context, bucket, dst, src string) error {
-//         return errd.Catch(func(e *errd.E) {
+//         return errd.Run(func(e *errd.E) {
 //             client, err := storage.NewClient(ctx)
 //             e.Must(err, msg("error opening client"))
 //             e.Defer(client.Close)
