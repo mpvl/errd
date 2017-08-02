@@ -32,32 +32,6 @@ var (
 		i := err.(intErr)
 		return i - 1
 	})
-
-	defErr = func(x interface{}) DeferFunc {
-		if i, ok := x.(int); ok {
-			return func(s State, x interface{}) error {
-				if i != 0 {
-					return intErr(i)
-				}
-				return nil
-			}
-		}
-		return nil
-	}
-
-	defStrInt = func(x interface{}) DeferFunc {
-		if _, ok := x.(string); ok {
-			return func(s State, x interface{}) error {
-				return nil
-			}
-		}
-		if i, ok := x.(int); ok {
-			return func(s State, x interface{}) error {
-				return intErr(i + 1)
-			}
-		}
-		return nil
-	}
 )
 
 func TestOptions(t *testing.T) {
