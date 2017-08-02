@@ -99,7 +99,7 @@
 // generic storage writer that will add additional clarification when possible.
 // Using such a handler as a default handler would look like:
 //
-//     var ecGS = errd.New(storageHandler)
+//     var ecGS = errd.WithDefault(storageHandler)
 //
 //     func writeToGS(ctx context.Context, bucket, dst, src string) error {
 //         return ecGS.Run(func(e *errd.E) {

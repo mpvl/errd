@@ -142,7 +142,7 @@ error handle to add information based on the returned error.
 This code uses such a default handler:
 
 ```go
-var ecGS = errd.New(convertGSError)
+var ecGS = errd.WithDefault(convertGSError)
 
 func writeToGS(ctx context.Context, bucket, dst, src string) error {
     return ecGS.Run(func(e *errd.E) {
