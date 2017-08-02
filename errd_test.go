@@ -89,8 +89,12 @@ func (c *idCloser) Close() error {
 
 func (c *idCloser) CloseWithError(err error) error {
 	if c.w != nil {
-		fmt.Fprint(c.w, "closed with error: ", c.id)
-		fmt.Fprintln(c.w, ":", err)
+		if err == nil {
+			fmt.Fprintln(c.w, "closed", c.id)
+		} else {
+			fmt.Fprint(c.w, "closed with error: ", c.id)
+			fmt.Fprintln(c.w, ":", err)
+		}
 	}
 	switch c.action {
 	case deferError:
@@ -166,7 +170,21 @@ func errdClosureDefer(w io.Writer, actions []int) errFunc {
 			for i, a := range actions {
 				c, err := retDefer(w, closers, i, a)
 				e.Must(err)
-				e.DeferFunc(c, Close)
+				e.Defer(c.Close)
+			}
+		})
+		return err
+	}
+}
+
+func errdFuncDefer(w io.Writer, actions []int) errFunc {
+	closers := make([]idCloser, len(actions))
+	return func() error {
+		err := ec.Run(func(e *E) {
+			for i, a := range actions {
+				c, err := retDefer(w, closers, i, a)
+				e.Must(err)
+				e.deferFunc(c, close)
 			}
 		})
 		return err
@@ -243,7 +261,20 @@ func errdClosureDeferWithError(w io.Writer, actions []int) errFunc {
 			for i, a := range actions {
 				c, err := retDeferWithErr(w, closers, i, a)
 				e.Must(err, identity)
-				e.DeferFunc(c, CloseWithError)
+				e.Defer(c.CloseWithError)
+			}
+		})
+	}
+}
+
+func errdFuncDeferWithError(w io.Writer, actions []int) errFunc {
+	closers := make([]idCloser, len(actions))
+	return func() error {
+		return ec.Run(func(e *E) {
+			for i, a := range actions {
+				c, err := retDeferWithErr(w, closers, i, a)
+				e.Must(err, identity)
+				e.deferFunc(c, closeWithErrorFunc)
 			}
 		})
 	}
@@ -398,9 +429,13 @@ func BenchmarkDeferCloseWithError(b *testing.B) {
 	runBenchCases(b, testFuncsDeferCloseWithError)
 }
 
+var testAllocsDefer = []benchCase{
+	{"errd/closer", errdFuncDefer},
+	{"errd/closerwe", errdFuncDeferWithError},
+}
+
 func TestAlloc(t *testing.T) {
-	allFuncs := append(testFuncsNoDefer,
-		append(testFuncsDeferClose, testFuncsDeferCloseWithError...)...)
+	allFuncs := append(testFuncsNoDefer, testAllocsDefer...)
 	for _, tf := range allFuncs {
 		for _, bc := range benchCases {
 			t.Run(key(bc.actions)+"/"+tf.name, func(t *testing.T) {
@@ -474,7 +509,7 @@ func TestPanic(t *testing.T) {
 		err: "errd: paniced: 2",
 	}, {
 		f: func(e *E) {
-			e.DeferFunc(nil, nil) // panic: nil func
+			e.deferFunc(nil, nil) // panic: nil func
 		},
 		p:   errNilFunc,
 		err: errNilFunc.Error(),
@@ -501,7 +536,7 @@ func TestPanic(t *testing.T) {
 				}
 			}()
 			ec.Run(func(e *E) {
-				e.DeferFunc(nil, func(s State, x interface{}) error {
+				e.deferFunc(nil, func(s State, x interface{}) error {
 					err := s.Err()
 					if err == nil && tc.err != "" || err != nil && err.Error() != tc.err {
 						t.Errorf("got %q; want %q", err, tc.err)

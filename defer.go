@@ -19,16 +19,22 @@ type closerWithError interface {
 
 type deferData struct {
 	x interface{}
-	f DeferFunc
+	f deferFunc
 }
 
+// TODO: DeferFunc is much faster than Defer, as it avoids an allocation in many
+// cases. Add it back if users need this performance.
+
 // A DeferFunc is used to call cleanup code for x at defer time.
-type DeferFunc func(s State, x interface{}) error
+type deferFunc func(s State, x interface{}) error
 
 // DeferFunc calls f at the end of a Run with x as its argument.
 //
 // If f returns an error it will be passed to the error handlers.
-func (e *E) DeferFunc(x interface{}, f DeferFunc, h ...Handler) {
+//
+// DeferFunc can be used to avoid the allocation typically incurred
+// with Defer.
+func (e *E) deferFunc(x interface{}, f deferFunc, h ...Handler) {
 	if f == nil {
 		panic(errNilFunc)
 	}
@@ -42,20 +48,20 @@ var errNilFunc = errors.New("errd: nil DeferFunc")
 
 var (
 	// Close calls x.Close().
-	Close DeferFunc = close
+	close deferFunc = closeFunc
 
 	// CloseWithError calls x.CloseWithError().
-	CloseWithError DeferFunc = closeWithError
+	closeWithError deferFunc = closeWithErrorFunc
 
 	// Unlock calls x.Unlock().
-	Unlock DeferFunc = unlock
+	unlock deferFunc = unlockFunc
 )
 
-func close(s State, x interface{}) error {
+func closeFunc(s State, x interface{}) error {
 	return x.(io.Closer).Close()
 }
 
-func closeWithError(s State, x interface{}) error {
+func closeWithErrorFunc(s State, x interface{}) error {
 	c := x.(closerWithError)
 	if err := s.Err(); err != nil {
 		return c.CloseWithError(err)
@@ -63,7 +69,7 @@ func closeWithError(s State, x interface{}) error {
 	return c.Close()
 }
 
-func unlock(s State, x interface{}) error {
+func unlockFunc(s State, x interface{}) error {
 	x.(sync.Locker).Unlock()
 	return nil
 }
@@ -86,11 +92,16 @@ func errorErrorFunc(s State, x interface{}) error {
 	return x.(func(error) error)(s.Err())
 }
 
+func stateErrorFunc(s State, x interface{}) error {
+	return x.(func(s State) error)(s)
+}
+
 // Defer defers a call to x, which may be a function of the form:
 //    - func()
 //    - func() error
 //    - func(error)
 //    - func(error) error
+//    - func(State) error
 // An error returned by any of these functions is passed to the error handlers.
 //
 // Performance-sensitive applications should use DeferFunc.
@@ -99,7 +110,7 @@ func (e *E) Defer(x interface{}, h ...Handler) {
 		for i := len(h) - 1; i >= 0; i-- {
 			e.deferred = append(e.deferred, deferData{h[i], nil})
 		}
-		var f DeferFunc
+		var f deferFunc
 		switch x.(type) {
 		case func():
 			f = voidFunc
@@ -109,6 +120,8 @@ func (e *E) Defer(x interface{}, h ...Handler) {
 			f = errorFunc
 		case func(error) error:
 			f = errorErrorFunc
+		case func(s State) error:
+			f = stateErrorFunc
 		default:
 			panic(fmt.Errorf(notSupported, x))
 		}

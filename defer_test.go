@@ -70,7 +70,7 @@ func TestDefer(t *testing.T) {
 		want: "Close",
 	}, {
 		f: func(e *E) {
-			e.DeferFunc(closerError, CloseWithError, h1)
+			e.deferFunc(closerError, closeWithErrorFunc, h1)
 		},
 		want: "CloseNil",
 	}, {
@@ -93,7 +93,16 @@ func TestDefer(t *testing.T) {
 		want: "Abort",
 	}, {
 		f: func(e *E) {
-			e.DeferFunc(closerError, closeWithError, h1)
+			e.Defer(func(s State) error {
+				result += "State"
+				return s.Err()
+			})
+		},
+		err:  errors.New("Error"),
+		want: "State",
+	}, {
+		f: func(e *E) {
+			e.deferFunc(closerError, closeWithError, h1)
 		},
 		err:  errors.New("Error"),
 		want: "Close:Error:DefErr1",
@@ -118,7 +127,7 @@ func BenchmarkDeferFunc(b *testing.B) {
 	x := &closer{}
 	ec.Run(func(e *E) {
 		for i := 0; i < b.N; i++ {
-			e.DeferFunc(x, close)
+			e.deferFunc(x, closeFunc)
 			e.deferred = e.deferred[:0]
 		}
 	})
