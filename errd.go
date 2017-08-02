@@ -14,7 +14,7 @@ const bufSize = 3
 
 type core struct {
 	// Fits into 128 bytes; 2 cache lines on many modern architectures.
-	config   *Config
+	runner   *config
 	deferred []deferData
 	buf      [bufSize]deferData
 	err      *error
@@ -60,7 +60,7 @@ func (s *state) Context() context.Context {
 	return s.context
 }
 
-func (s *state) Panicing() bool { return s.config.inPanic }
+func (s *state) Panicing() bool { return s.runner.inPanic }
 
 func (s *state) Err() error {
 	if s.err == nil {
@@ -78,10 +78,10 @@ func doRecover(e *E, err *error) {
 		finishDefer(e, err)
 		*err = *e.err
 	default:
-		if !e.config.inPanic {
-			c := *e.config
+		if !e.runner.inPanic {
+			c := *e.runner
 			c.inPanic = true
-			e.config = &c
+			e.runner = &c
 		}
 		err2, ok := r.(error)
 		if !ok {
@@ -145,7 +145,7 @@ func processErrorSentinel(e *E, err, sentinel error, handlers []Handler) bool {
 		}
 	}
 	if len(handlers) == 0 {
-		for _, h := range e.config.defaultHandlers {
+		for _, h := range e.runner.defaultHandlers {
 			if eh.handle(h) {
 				return false
 			}
@@ -174,7 +174,7 @@ func processDeferError(e *E, err error) {
 		}
 	}
 	if !hadHandler {
-		for _, h := range e.config.defaultHandlers {
+		for _, h := range e.runner.defaultHandlers {
 			if eh.handle(h) {
 				return
 			}
@@ -193,7 +193,7 @@ func processError(e *E, err error, handlers []Handler) {
 		}
 	}
 	if len(handlers) == 0 {
-		for _, h := range e.config.defaultHandlers {
+		for _, h := range e.runner.defaultHandlers {
 			if eh.handle(h) {
 				return
 			}

@@ -37,41 +37,41 @@ var (
 func TestOptions(t *testing.T) {
 	// Error unconditionally generated in the second statement.
 	testCases := []struct {
-		desc       string
-		options    []Handler
-		handlers1  []Handler
-		handlersD1 []Handler
-		handlers2  []Handler
-		def1       interface{}
-		err1       error
-		err2       error
-		want       error
+		desc        string
+		defHandlers []Handler
+		handlers1   []Handler
+		handlersD1  []Handler
+		handlers2   []Handler
+		def1        interface{}
+		err1        error
+		err2        error
+		want        error
 	}{{
 		desc: "no option",
 		err1: nil,
 		want: nil,
 	}, {
-		desc:    "default option",
-		options: []Handler{inc},
-		err1:    err0,
-		want:    err1,
+		desc:        "default option",
+		defHandlers: []Handler{inc},
+		err1:        err0,
+		want:        err1,
 	}, {
-		desc:    "default twice",
-		options: []Handler{inc, inc},
-		err1:    err0,
-		want:    err2,
+		desc:        "default twice",
+		defHandlers: []Handler{inc, inc},
+		err1:        err0,
+		want:        err2,
 	}, {
-		desc:      "mask default",
-		options:   []Handler{inc},
-		handlers1: []Handler{dec},
-		err1:      err2,
-		want:      err1,
+		desc:        "mask default",
+		defHandlers: []Handler{inc},
+		handlers1:   []Handler{dec},
+		err1:        err2,
+		want:        err1,
 	}, {
-		desc:      "test DefaultFunc",
-		options:   []Handler{inc},
-		handlers1: []Handler{dec},
-		err1:      err2,
-		want:      err1,
+		desc:        "test DefaultFunc",
+		defHandlers: []Handler{inc},
+		handlers1:   []Handler{dec},
+		err1:        err2,
+		want:        err1,
 	}, {
 		desc:      "handler once",
 		handlers1: []Handler{inc},
@@ -90,11 +90,11 @@ func TestOptions(t *testing.T) {
 		err2:      err2,
 		want:      nil,
 	}, {
-		desc:    "erase in default handler",
-		options: []Handler{Discard},
-		err1:    err1,
-		err2:    err2,
-		want:    nil,
+		desc:        "erase in default handler",
+		defHandlers: []Handler{Discard},
+		err1:        err1,
+		err2:        err2,
+		want:        nil,
 	}, {
 		desc:      "handler cannot clear error",
 		handlers2: []Handler{Discard},
@@ -104,7 +104,7 @@ func TestOptions(t *testing.T) {
 	}}
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := New(tc.options...).Run(func(e *E) {
+			got := WithDefault(tc.defHandlers...).Run(func(e *E) {
 				args := []interface{}{tc.def1, tc.err1}
 				for _, h := range tc.handlers1 {
 					args = append(args, h)

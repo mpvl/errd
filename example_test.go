@@ -18,7 +18,7 @@ import (
 )
 
 func ExampleHandler_fatal() {
-	exitOnError := errd.New(errd.Fatal)
+	exitOnError := errd.WithDefault(errd.Fatal)
 	exitOnError.Run(func(e *errd.E) {
 		r, err := newReader()
 		e.Must(err)

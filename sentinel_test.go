@@ -71,7 +71,7 @@ func TestIsSentinel(t *testing.T) {
 		if err != tc.wantErr {
 			t.Errorf("%d:IsSentinel:err: got %v; want %v", i, err, tc.wantErr)
 		}
-		err = New(tc.handlers...).Run(func(e *E) {
+		err = WithDefault(tc.handlers...).Run(func(e *E) {
 			got := e.IsEOF(tc.err)
 			if got != tc.want {
 				t.Errorf("%d:IsEOF:bool: got %v; want %v", i, got, tc.want)

@@ -6,22 +6,17 @@ package errd
 
 import "context"
 
-// New returns a new Config for the given default handlers.
-func New(defaultHandlers ...Handler) *Config {
-	c := &Config{
-		defaultHandlers: defaultHandlers,
+// WithDefault returns a new Config for the given default handlers.
+func WithDefault(h ...Handler) *Runner {
+	return &Runner{
+		config: &config{
+			defaultHandlers: h,
+		},
 	}
-	c.state.config = c
-	return c
 }
 
-// A Config defines a default way to handle errors and options.
-type Config struct {
+type config struct {
 	defaultHandlers []Handler
-
-	// Putting a pre-initialized state in a Config improves performance a tad
-	// bit.
-	state E
 
 	// inPanic indicates a panic is occurring: a copy of this Config with inPanic
 	// set is assigned to the state if a panic occurs. This removes this field
@@ -29,55 +24,56 @@ type Config struct {
 	inPanic bool
 }
 
-var config Config
-
-func init() {
-	config.state.config = &config
+// A Runner defines a default way to handle errors and options.
+type Runner struct {
+	*config
+	context context.Context
 }
+
+// Default is the default Runner comfiguration.
+var Default = WithDefault()
 
 // Run starts a new error handling scope. The function returns whenever an error
 // is encountered with one of the methods on E.
-func (c *Config) Run(f func(e *E)) (err error) {
-	state := c.state
-	state.deferred = state.buf[:0]
-	defer doRecover(&state, &err)
-	f(&state)
-	// Do defers now to save on an extra defer.
-	doDefers(&state, 0)
-	if state.err != nil {
-		return *state.err
+func (r *Runner) Run(f func(e *E)) (err error) {
+	// state := c.state
+	var e E
+	e.runner = r.config
+	e.deferred = e.buf[:0]
+	defer doRecover(&e, &err)
+	f(&e)
+	doDefers(&e, 0)
+	if e.err != nil {
+		return *e.err
 	}
 	return nil
 }
 
 // RunWithContext starts a new error handling scope. The function returns
 // whenever an error is encountered with one of the methods on E.
-func (c *Config) RunWithContext(ctxt context.Context, f func(e *E)) (err error) {
-	state := c.state
-	state.deferred = state.buf[:0]
-	state.context = ctxt
-	defer doRecover(&state, &err)
-	f(&state)
+func (r *Runner) RunWithContext(ctxt context.Context, f func(e *E)) (err error) {
 	// Do defers now to save on an extra defer.
-	doDefers(&state, 0)
-	if state.err != nil {
-		return *state.err
+	// state := c.state
+	var e E
+	e.runner = r.config
+	e.deferred = e.buf[:0]
+	e.context = ctxt
+	defer doRecover(&e, &err)
+	f(&e)
+	// Do defers now to save on an extra defer.
+	doDefers(&e, 0)
+	if e.err != nil {
+		return *e.err
 	}
 	return nil
 }
 
-// TODO: consider removing these functions:
-
-// Run calls f with a new E.
-//
-// Use this method with care, as it does not define a default handler.
+// Run calls Default.Run(f)
 func Run(f func(*E)) (err error) {
-	return config.Run(f)
+	return Default.Run(f)
 }
 
-// RunWithContext  calls f with a new E.
-//
-// Use this method with care, as it does not define a default handler.
+// RunWithContext calls Default.RunWithContext(ctxt, f)
 func RunWithContext(ctxt context.Context, f func(*E)) (err error) {
-	return config.RunWithContext(ctxt, f)
+	return Default.RunWithContext(ctxt, f)
 }

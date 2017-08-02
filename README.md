@@ -173,7 +173,6 @@ The package is clearly not a daemon.
 However, `errd` does suggests that it is does something with errors related to
 handling them in the background.
 But that is pretty much what the package does and it is short to boot.
-Other contenders were `derr` and `ec`.
 The `errd` name originally popped in my head as a result of finding contractions
 of error and defer.
 So if the daemon implication bothers you, think of the `d` standing for

@@ -148,5 +148,5 @@ package errd
 //
 // For v2, if performance allows::
 // - make E an interface: this allows injecting with test simulator.
-//   Would be great for such functionality. Godocs will not look as nice,
+//   Would be great for such functionality. Go docs will not look as nice,
 //   though.

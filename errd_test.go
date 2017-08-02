@@ -161,7 +161,7 @@ func properTraditionalDefer(w io.Writer, actions []int) errFunc {
 	}
 }
 
-var ec = New()
+var ec = WithDefault()
 
 func errdClosureDefer(w io.Writer, actions []int) errFunc {
 	closers := make([]idCloser, len(actions))
@@ -521,7 +521,7 @@ func TestPanic(t *testing.T) {
 	}}
 	for _, tc := range testCases {
 		paniced := false
-		ec := New(HandlerFunc(func(s State, err error) error {
+		ec := WithDefault(HandlerFunc(func(s State, err error) error {
 			paniced = s.Panicing()
 			return err
 		}))
