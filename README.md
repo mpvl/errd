@@ -1,4 +1,4 @@
-# errd [![GoDoc](https://godoc.org/github.com/mpvl/errd?status.svg)](http://godoc.org/github.com/mpvl/errd) [![Report card](https://goreportcard.com/badge/github.com/mpvl/errd)](https://goreportcard.com/report/github.com/mpvl/errd) [![Travis-CI](https://travis-ci.org/mpvl/errd.svg)](https://travis-ci.org/mpvl/errd)
+# errd [![GoDoc](https://godoc.org/github.com/mpvl/errd?status.svg)](http://godoc.org/github.com/mpvl/errd) [![Travis-CI](https://travis-ci.org/mpvl/errd.svg)](https://travis-ci.org/mpvl/errd) [![Report card](https://goreportcard.com/badge/github.com/mpvl/errd)](https://goreportcard.com/report/github.com/mpvl/errd) [![codecov](https://codecov.io/gh/mpvl/errd/branch/master/graph/badge.svg)](https://codecov.io/gh/mpvl/errd)
 
 
 Package `errd` simplifies error and defer handling.
@@ -274,6 +274,9 @@ goroutine boundaries.
 https://blog.golang.org/errors-are-values
 
 https://research.swtch.com/go2017#error
+
+https://github.com/golang/go/issues/21161 poses as a problem what is addressed
+in this package.
 
 In https://github.com/golang/go/issues/20803 argues against allowing implicitly
 ignored variables.
