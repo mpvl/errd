@@ -27,7 +27,7 @@ func (c *closerError) CloseWithError(err error) error {
 	if err == nil {
 		*c.v = "CloseNil"
 	} else {
-		*c.v = "Close" + err.Error()
+		*c.v = "Close:" + err.Error()
 	}
 	return errors.New("defer error")
 }
@@ -40,6 +40,10 @@ func (u *locker) Lock()   {}
 type errInOnly struct{ v *string }
 
 func (e *errInOnly) Abort(err error) { *e.v = "Abort" }
+
+type wrapError struct {
+	error
+}
 
 func TestDefer(t *testing.T) {
 	var result string
@@ -57,14 +61,18 @@ func TestDefer(t *testing.T) {
 		return err
 	})
 
+	errTest := errors.New("Error")
+	errWrap := wrapError{errTest}
 	closer := &closer{&result}
 	closerError := &closerError{&result}
 	locker := &locker{&result}
 	errInOnly := &errInOnly{&result}
 	testCases := []struct {
-		f    func(e *E)
-		err  error // body error
-		want string
+		f           func(e *E)
+		err         error // body error
+		wrapped     error
+		want        string
+		defHandlers []Handler
 	}{{
 		f:    func(e *E) { e.Defer(closer.Close, h1) },
 		want: "Close",
@@ -77,20 +85,23 @@ func TestDefer(t *testing.T) {
 		f: func(e *E) {
 			e.Defer(closerError.CloseWithError, h1, h2, h3)
 		},
-		err:  errors.New("Error"),
-		want: "Close:Error:DefErr1:DefErr2:DefErr3",
+		err:     errTest,
+		wrapped: errWrap,
+		want:    "Close:Error:DefErr1:DefErr2:DefErr3",
 	}, {
 		f: func(e *E) {
 			e.Defer(locker.Unlock)
 		},
-		err:  errors.New("Error"),
-		want: "Unlocked",
+		err:     errTest,
+		wrapped: errWrap,
+		want:    "Unlocked",
 	}, {
 		f: func(e *E) {
 			e.Defer(errInOnly.Abort)
 		},
-		err:  errors.New("Error"),
-		want: "Abort",
+		err:     errTest,
+		wrapped: errWrap,
+		want:    "Abort",
 	}, {
 		f: func(e *E) {
 			e.Defer(func(s State) error {
@@ -98,26 +109,51 @@ func TestDefer(t *testing.T) {
 				return s.Err()
 			})
 		},
-		err:  errors.New("Error"),
-		want: "State",
+		err:     errTest,
+		wrapped: errWrap,
+		want:    "State",
+	}, {
+		f: func(e *E) {
+			e.Defer(func(s State) error {
+				return errors.New("to discard")
+			}, Discard)
+		},
+	}, {
+		f: func(e *E) {
+			e.Defer(func(s State) error {
+				return errors.New("to discard")
+			})
+		},
+		defHandlers: []Handler{Discard},
 	}, {
 		f: func(e *E) {
 			e.deferFunc(closerError, closeWithError, h1)
 		},
-		err:  errors.New("Error"),
-		want: "Close:Error:DefErr1",
+		err:     errTest,
+		wrapped: errWrap,
+		want:    "Close:Error:DefErr1",
+	}, {
+		f: func(e *E) {
+			e.deferFunc(locker, unlock, h1)
+		},
+		err:     errTest,
+		wrapped: errWrap,
+		want:    "Unlocked",
 	}}
 	for _, tc := range testCases {
 		result = ""
 		t.Run(tc.want, func(t *testing.T) {
-			Run(func(e *E) {
+			err := WithDefault(tc.defHandlers...).Run(func(e *E) {
 				tc.f(e)
 				e.Must(tc.err, HandlerFunc(func(s State, err error) error {
-					return errors.New(":" + err.Error())
+					return wrapError{err}
 				}))
 			})
+			if err != tc.wrapped {
+				t.Errorf("err: got %q; want %q", err, tc.wrapped)
+			}
 			if result != tc.want {
-				t.Errorf("err: got %q; want %q", result, tc.want)
+				t.Errorf("result: got %q; want %q", result, tc.want)
 			}
 		})
 	}

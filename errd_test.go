@@ -462,7 +462,7 @@ func TestRunWithContext(t *testing.T) {
 	var ctx context.Context
 	h := HandlerFunc(func(s State, err error) error {
 		ctx = s.Context()
-		return nil
+		return err
 	})
 
 	Run(func(e *E) { e.Must(errors.New("no context"), h) })
@@ -470,10 +470,18 @@ func TestRunWithContext(t *testing.T) {
 		t.Error("got a nil context, expected TODO")
 	}
 
+	errContext := errors.New("context")
 	bg := context.Background()
-	RunWithContext(bg, func(e *E) { e.Must(errors.New("context"), h) })
+	RunWithContext(bg, func(e *E) { e.Must(errContext, h) })
 	if ctx != bg {
 		t.Errorf("got %v; expect defined background context", ctx)
+	}
+
+	err := RunWithContext(bg, func(e *E) {
+		e.Defer(func() error { return errContext }, h)
+	})
+	if err != errContext {
+		t.Errorf("got %v; want %v", err, errContext)
 	}
 }
 
