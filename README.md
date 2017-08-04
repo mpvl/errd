@@ -297,6 +297,10 @@ Issue https://github.com/golang/go/issues/16225 also expresses the desire to do
 shorter and terser error handling.
 Package `errd` accomplishes this without a language change.
 
+Issue https://github.com/golang/go/issues/21182 aims to reduce noise in return
+statements when returning non-nil errors. This is addressed by package `errd`
+by eliminating the returns in such cases alltogether.
+
 Some other related Issues:
 https://github.com/golang/go/issues/19511
 https://github.com/golang/go/issues/19727
