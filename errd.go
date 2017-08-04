@@ -11,7 +11,9 @@ import (
 )
 
 // Default is the default Runner comfiguration.
-var Default = WithDefault()
+var (
+	Default *Runner = WithDefault()
+)
 
 // Run calls Default.Run(f)
 func Run(f func(*E)) (err error) {
