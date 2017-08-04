@@ -236,11 +236,10 @@ func processErrorSentinel(e *E, err, sentinel error, handlers []Handler) bool {
 func processDeferError(e *E, err error) {
 	eh := errorHandler{e: e, err: &err}
 	hadHandler := false
-	// Apply handlers added by Defer methods.
+	// Apply handlers added by Defer methods. A zero deferred value signals that
+	// we have custom defer handler for the subsequent fields.
 	for i := len(e.deferred); i > 0 && e.deferred[i-1].f == nil; i-- {
 		hadHandler = true
-		// A zero deferred value signals that we have custom defer handler for
-		// the subsequent fields.
 		if eh.handle(e.deferred[i-1].x.(Handler)) {
 			return
 		}

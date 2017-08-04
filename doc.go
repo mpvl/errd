@@ -45,7 +45,7 @@
 // making the default of having very strict error checking easy.
 // The following code achieves the same as the above:
 //
-//     func writeToGS(ctx context.Context, bucket, dst, src string) error {
+//     func writeToGS(ctx context.Context, bucket, dst, src string, r io.Reader) error {
 //         return errd.Run(func(e *errd.E) {
 //             client, err := storage.NewClient(ctx)
 //             e.Must(err)
