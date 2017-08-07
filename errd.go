@@ -208,33 +208,6 @@ func (h errorHandler) handle(eh Handler) (done bool) {
 
 }
 
-func processErrorSentinel(e *E, err, sentinel error, handlers []Handler) bool {
-	eh := errorHandler{e: e, err: &err}
-	for _, h := range handlers {
-		if eh.handle(h) {
-			return false
-		}
-		if err == sentinel {
-			return true
-		}
-	}
-	if len(handlers) == 0 {
-		for _, h := range e.runner.defaultHandlers {
-			if eh.handle(h) {
-				return false
-			}
-			if err == sentinel {
-				return true
-			}
-		}
-	}
-	if e.err == nil {
-		e.err = &err
-	}
-	bail(e)
-	panic("errd: unreachable")
-}
-
 func processDeferError(e *E, err error) {
 	eh := errorHandler{e: e, err: &err}
 	hadHandler := false
