@@ -114,10 +114,10 @@ type State interface {
 	// otherwise.
 	Context() context.Context
 
-	// Panicing reports whether the error resulted from a panic. If true,
+	// Panicking reports whether the error resulted from a panic. If true,
 	// the panic will be resume after error handling completes. An error handler
 	// cannot rewrite an error when panicing.
-	Panicing() bool
+	Panicking() bool
 
 	// Err reports the first error that passed through an error handler chain.
 	// Note that this is always a different error (or nil) than the one passed
@@ -134,7 +134,7 @@ func (s *state) Context() context.Context {
 	return s.context
 }
 
-func (s *state) Panicing() bool { return s.runner.inPanic }
+func (s *state) Panicking() bool { return s.runner.inPanic }
 
 func (s *state) Err() error {
 	if s.err == nil {

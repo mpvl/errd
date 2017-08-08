@@ -530,7 +530,7 @@ func TestPanic(t *testing.T) {
 	for _, tc := range testCases {
 		paniced := false
 		ec := WithDefault(HandlerFunc(func(s State, err error) error {
-			paniced = s.Panicing()
+			paniced = s.Panicking()
 			return err
 		}))
 		t.Run("", func(t *testing.T) {
